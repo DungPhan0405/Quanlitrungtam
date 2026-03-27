@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Thông tin tài khoản người dùng hệ thống",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "displayName": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Thông tin học viên",
+      "type": "object",
+      "properties": {
+        "maHV": { "type": "string" },
+        "hoTen": { "type": "string" },
+        "ngaySinh": { "type": "string" },
+        "sdt": { "type": "string" },
+        "diaChi": { "type": "string" },
+        "khoaHocId": { "type": "string" },
+        "trangThai": { "type": "string", "enum": ["đang học", "nghỉ"] }
+      },
+      "required": ["maHV", "hoTen", "sdt", "khoaHocId", "trangThai"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Thông tin khóa học",
+      "type": "object",
+      "properties": {
+        "maKH": { "type": "string" },
+        "tenKH": { "type": "string" },
+        "hocPhi": { "type": "number" },
+        "thoiGian": { "type": "string" }
+      },
+      "required": ["maKH", "tenKH", "hocPhi"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "Thông tin lớp học",
+      "type": "object",
+      "properties": {
+        "maLop": { "type": "string" },
+        "tenLop": { "type": "string" },
+        "maKH": { "type": "string" },
+        "giaoVien": { "type": "string" }
+      },
+      "required": ["maLop", "tenLop", "maKH"]
+    },
+    "Tuition": {
+      "title": "Tuition",
+      "description": "Thông tin thu học phí",
+      "type": "object",
+      "properties": {
+        "maPhieu": { "type": "string" },
+        "maHV": { "type": "string" },
+        "soTien": { "type": "number" },
+        "ngayThu": { "type": "string", "format": "date-time" }
+      },
+      "required": ["maPhieu", "maHV", "soTien", "ngayThu"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Danh sách tài khoản hệ thống"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Danh sách học viên"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Danh sách khóa học"
+    },
+    "/classes/{classId}": {
+      "schema": "Class",
+      "description": "Danh sách lớp học"
+    },
+    "/tuition/{tuitionId}": {
+      "schema": "Tuition",
+      "description": "Danh sách phiếu thu học phí"
+    }
+  }
+}

@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // - uid: string (required)
+    // - email: string (required, email)
+    // - role: string (required, 'admin' or 'staff')
+    // - displayName: string
+    //
+    // Collection: students
+    // - maHV: string (required)
+    // - hoTen: string (required)
+    // - ngaySinh: string
+    // - sdt: string (required)
+    // - diaChi: string
+    // - khoaHocId: string (required)
+    // - trangThai: string (required, 'đang học' or 'nghỉ')
+    //
+    // Collection: courses
+    // - maKH: string (required)
+    // - tenKH: string (required)
+    // - hocPhi: number (required)
+    // - thoiGian: string
+    //
+    // Collection: classes
+    // - maLop: string (required)
+    // - tenLop: string (required)
+    // - maKH: string (required)
+    // - giaoVien: string
+    //
+    // Collection: tuition
+    // - maPhieu: string (required)
+    // - maHV: string (required)
+    // - soTien: number (required)
+    // - ngayThu: timestamp (required)
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "hungdung5a4@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isStaff() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff' || isAdmin()
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'staff'];
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['maHV', 'hoTen', 'sdt', 'khoaHocId', 'trangThai']) &&
+             data.maHV is string && data.maHV.size() > 0 &&
+             data.hoTen is string && data.hoTen.size() > 0 &&
+             data.sdt is string && data.sdt.size() > 0 &&
+             data.trangThai in ['đang học', 'nghỉ'];
+    }
+
+    function isValidCourse(data) {
+      return data.keys().hasAll(['maKH', 'tenKH', 'hocPhi']) &&
+             data.maKH is string && data.maKH.size() > 0 &&
+             data.tenKH is string && data.tenKH.size() > 0 &&
+             data.hocPhi is number && data.hocPhi >= 0;
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['maLop', 'tenLop', 'maKH']) &&
+             data.maLop is string && data.maLop.size() > 0 &&
+             data.tenLop is string && data.tenLop.size() > 0 &&
+             data.maKH is string && data.maKH.size() > 0;
+    }
+
+    function isValidTuition(data) {
+      return data.keys().hasAll(['maPhieu', 'maHV', 'soTien', 'ngayThu']) &&
+             data.maPhieu is string && data.maPhieu.size() > 0 &&
+             data.maHV is string && data.maHV.size() > 0 &&
+             data.soTien is number && data.soTien >= 0 &&
+             data.ngayThu is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && (request.auth.uid == userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'staff' || isAdmin());
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /students/{studentId} {
+      allow read: if isStaff();
+      allow create, update: if isStaff() && isValidStudent(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow read: if isStaff();
+      allow create, update: if isAdmin() && isValidCourse(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /classes/{classId} {
+      allow read: if isStaff();
+      allow create, update: if isStaff() && isValidClass(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /tuition/{tuitionId} {
+      allow read: if isStaff();
+      allow create, update: if isStaff() && isValidTuition(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}
